@@ -165,6 +165,4 @@ Found a bug? Have a suggestion? Feel free to:
 
 **Made with ❤️ for the researchers planning on adopting new response methods in behavioural science**
 
-[⬆ Back to top](#-joystick-and-gamepad-visualizer)
-
 </div>
