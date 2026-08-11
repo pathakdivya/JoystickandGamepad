@@ -1,0 +1,2336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayStation Gamepad Visualiser</title>
+    <style>
+:root {
+    --background: #0f1419;
+    --primary-blue: #0a3179;
+    --secondary-blue: #2a5298;
+    --bg-dark: #0f1419;
+    --accent-cyan: #CACC90;
+    --accent-purple: #7DB54F;
+    
+    --text-primary: #333;
+    --text-secondary: #666;
+    --text-light: #999;
+    --text-white: #fff;
+    
+    --bg-white: #ffffff;
+    --bg-light: #f0f0f0;
+    --bg-card: rgba(255, 255, 255, 0.1);
+    --bg-input: #f9f9f9;
+    --bg-hover: #e8f4ff;
+
+    --controller-element: #2a2a2a;
+    --controller-active: #0078d4; 
+    --controller-border: #333;
+    --controller-stick-bg: #ffffff;
+    --controller-stick-dot: #333;
+    --controller-stick-border: #333;
+    
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    
+    --button-active: #00a1f1;
+    --button-disabled: #666;
+    
+    --shadow-glow: 0 0 20px rgba(0, 161, 241, 0.3);
+}
+
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--background);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+header {
+    text-align: center;
+    padding: 0px 20px 20px;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    background: var(--bg-white);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 10px;
+    text-shadow: var(--shadow-glow);
+}
+
+header p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+.main-container {
+    min-height: 95svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 24px 0 32px;
+}
+
+.container {
+    display: grid;
+    justify-content: center;
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+
+.controller-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    min-height: 600px;
+}
+
+
+.info-panel {
+    background: var(--bg-white);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.controller-info h3 {
+    margin-bottom: 15px;
+    color: var(--text-primary);
+    font-size: 1.2rem;
+}
+
+.controller-details {
+    margin-bottom: 20px;
+}
+
+.detail-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+.detail-row .label {
+    font-weight: bold;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.detail-row.values span {
+    font-family: 'Courier New', monospace;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+}
+
+.detail-row.values button {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    border: 1px solid var(--text-secondary);
+    border-radius: 4px;
+    background: var(--text-primary);
+    color: var(--text-white);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.detail-row.values button:enabled:hover {
+    background: #555;
+    border-color: var(--text-light);
+}
+
+.detail-row.values button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--button-disabled);
+    color: var(--text-light);
+}
+
+.haptic-info {
+    margin: 20px 0;
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+}
+
+.haptic-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+.haptic-row .label {
+    font-weight: bold;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.haptic-row.values span {
+    font-family: 'Courier New', monospace;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+}
+
+.vibration-test {
+    background: #e3f2fd;
+    padding: 2px 6px;
+    border-radius: 3px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.button-status {
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+}
+
+.button-grid {
+    margin-bottom: 20px;
+}
+
+.button-row {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 5px;
+    margin-bottom: 8px;
+}
+
+.button-row:last-child {
+    grid-template-columns: 1fr;
+}
+
+.button-row:last-child .btn-cell {
+    grid-column: 1 / -1;
+}
+
+.btn-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--bg-input);
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px;
+    min-height: 40px;
+}
+
+.btn-label {
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+}
+
+.btn-cell span:last-child {
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+
+.axis-status {
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+}
+
+.axis-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.axis-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--bg-input);
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 8px;
+}
+
+.axis-label {
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+}
+
+.axis-cell span:last-child {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.visual-panel {
+    background: var(--bg-white);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.controller-visual{
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+}
+
+.controller-outline {
+    position: relative;
+    background: url('images/Controller_2d.png') no-repeat center center;
+    background-size: contain;
+    width: 493px;
+    height: 277px;
+    aspect-ratio: 16/9;
+    z-index: 0;
+    overflow: visible !important;
+}
+
+.trigger {
+    position: absolute;
+    width: 40px;
+    height: 35px;
+    background: var(--controller-element);
+    top: -19px;
+}
+
+.trigger.left-trigger {
+    left: 127px;
+    border-radius: 23px 17px 0 0;
+    transform: rotate(-5deg);
+}
+
+.trigger.right-trigger {
+    right: 127px;
+    border-radius: 17px 23px 0 0;
+    transform: rotate(5deg);
+}
+
+.trigger.active {
+    background: var(--controller-active);
+}
+
+.shoulder {
+    position: absolute;
+    width: 40px;
+    height: 18px;
+    background: var(--controller-element);
+    border-radius: 0 0 13px 13px;
+    top: 20px;
+}
+
+.shoulder.left-shoulder {
+    left: 130px;
+    transform: rotate(-5deg);
+}
+
+.shoulder.right-shoulder {
+    right: 130px;
+    transform: rotate(5deg);
+}
+
+.shoulder.active {
+    background: var(--controller-active);
+}
+
+.controller-body {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    overflow: visible !important;
+}
+
+.dpad {
+    position: absolute;
+    left: 122px;
+    top: 79px;
+    width: 54px;
+    height: 54px;
+    --thick: 20px;
+    --arm: 14px;
+    --tip: 10px;
+}
+
+.dpad-btn {
+    position: absolute;
+    background: var(--controller-element);
+    border-radius: 6px;
+}
+
+.dpad-btn:nth-child(1) {
+    width: var(--thick);
+    height: calc(var(--arm) + var(--tip));
+    top: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    clip-path: polygon(0% 0%, 100% 0%, 100% calc(100% - var(--tip)), 50% 100%, 0% calc(100% - var(--tip)));
+}
+
+.dpad-btn:nth-child(2) {
+    width: var(--thick);
+    height: calc(var(--arm) + var(--tip));
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    clip-path: polygon(50% 0%, 100% var(--tip), 100% 100%, 0% 100%, 0% var(--tip));
+}
+
+.dpad-btn:nth-child(3) {
+    width: calc(var(--arm) + var(--tip));
+    height: var(--thick);
+    left: -2px;
+    top: 50%;
+    transform: translateY(-50%);
+    clip-path: polygon(0% 0%, calc(100% - var(--tip)) 0%, 100% 50%, calc(100% - var(--tip)) 100%, 0% 100%);
+}
+
+.dpad-btn:nth-child(4) {
+    width: calc(var(--arm) + var(--tip));
+    height: var(--thick);
+    right: -2px;
+    top: 50%;
+    transform: translateY(-50%);
+    clip-path: polygon(var(--tip) 0%, 100% 0%, 100% 100%, var(--tip) 100%, 0% 50%);
+}
+
+
+.dpad-btn.active {
+    background: var(--controller-active);
+}
+
+
+.face-buttons {
+    position: absolute;
+    right: 110px;
+    top: 70px;
+    width: 72px;
+    height: 72px;
+}
+
+.face-btn {
+    position: absolute;
+    width: 23px;
+    height: 23px;
+    background: var(--controller-element);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.face-btn:nth-child(1) {
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.face-btn:nth-child(2) {
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.face-btn:nth-child(3) {
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.face-btn:nth-child(4) {
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+
+.face-btn.active {
+    background: var(--controller-active);
+}
+
+.center-buttons {
+    position: absolute;
+    left: 50%;
+    top: 36px;
+    transform: translateX(-50%);
+    width: 160px;
+    height: 80px;
+}
+
+
+
+#touchpad {
+    width: 110px;
+    height: 66px;
+    top: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 14px;
+}
+
+#share {
+    width: 8px;
+    height: 17px;
+    top: 9px;
+    left: 0px;
+    border-radius: 4px;
+}
+
+#options {
+    width: 8px;
+    height: 17px;
+    top: 9px;
+    right: 0px;
+    border-radius: 4px;
+}
+
+#ps {
+    width: 19px;
+    height: 19px;
+    bottom: -50px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 50%;
+}
+
+
+
+
+.controller-visual-sticks {
+    position: absolute;
+    bottom: 110px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 160px;
+    height: 50px;
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: none;
+    z-index: 999;
+}
+
+.controller-stick-container {
+    position: relative;
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    width: 50px;
+    height: 50px;
+}
+
+.controller-stick-circle {
+    width: 40px !important;
+    height: 40px !important;
+    border: 1px solid var(--controller-stick-border) !important;
+    border-radius: 50%;
+    position: relative;
+    background: var(--controller-stick-bg) !important;
+    overflow: visible;
+    z-index: 1000;
+    display: block !important;
+}
+
+.controller-stick-dot {
+    width: 30px !important;
+    height: 30px !important;
+    background: var(--controller-stick-dot) !important;
+    border: none !important;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.08s ease;
+    z-index: 1001;
+    display: block !important;
+}
+
+.controller-stick-circle.active {
+    border-color: var(--controller-stick-border) !important;
+    background: var(--controller-stick-bg) !important;
+}
+
+.controller-stick-circle.active .controller-stick-dot {
+    background: var(--controller-stick-dot) !important;
+}
+
+.stick-visualizations {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin: 20px 0px;
+}
+
+.stick-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stick-circle {
+    width: 100px;
+    height: 100px;
+    border: 1px solid #666;
+    border-radius: 50%;
+    position: relative;
+    background: var(--controller-stick-bg);
+    overflow: visible;
+}
+
+.stick-circle::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #bbb;
+    transform: translateY(-50%);
+}
+
+.stick-circle::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: #bbb;
+    transform: translateX(-50%);
+}
+
+.stick-circle.active {
+    border-color: var(--controller-stick-border);
+}
+
+.stick-dot {
+    width: 5.5px;
+    height: 5.5px;
+    background: var(--controller-stick-dot);
+    border: none;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    transition: none;
+    z-index: 2;
+}
+
+.stick-circle.active .stick-dot {
+    background: var(--controller-stick-dot);
+}
+
+.stick-line {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    height: 1.3px;
+    background: #666;
+    transform-origin: 0 50%;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.stick-info {
+    text-align: center;
+    font-size: 0.8rem;
+}
+
+.diagnostics {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.diagnostics label {
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+.diagnostics input[type="checkbox"] {
+    margin-right: 5px;
+}
+
+.btn-cell.active {
+    background: var(--bg-hover);
+    border-color: var(--controller-active);
+}
+
+.axis-cell.active {
+    background: var(--bg-hover);
+    border-color: var(--controller-active);
+}
+
+@media (max-width: 1200px) {
+    .controller-layout {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .detail-row,
+    .haptic-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 5px;
+    }
+    
+    .button-row {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .axis-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .controller-outline {
+        width: 250px;
+        height: 160px;
+    }
+    
+    .stick-circle {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .stick-dot {
+        width: 10px;
+        height: 10px;
+    }
+}
+
+
+.tabs {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+    gap: 10px;
+}
+
+.tab-button {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    padding: 12px 24px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.tab-button:hover {
+    background: var(--glass-border);
+    box-shadow: var(--shadow-glow);
+    transform: translateY(-2px);
+}
+
+.tab-button.active {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    box-shadow: var(--shadow-glow);
+    transform: translateY(-2px);
+}
+
+.tab-content .tab-panel {
+    display: none;
+    background: var(--bg-card);
+    border-radius: 15px;
+    padding: 30px;
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.tab-content .tab-panel.active {
+    display: block;
+}
+
+.controller-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.ps5-controller-outline {
+    position: relative;
+    width: 800px;
+    height: 500px;
+    margin: 0 auto;
+}
+
+.controller-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('./controller-outline.jpg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.8;
+    z-index: 1;
+}
+
+.left-stick-area {
+    position: absolute;
+    top: 217px;
+    left: 243px;
+    z-index: 10;
+}
+
+.right-stick-area {
+    position: absolute;
+    top: 217px;
+    right: 243px;
+    z-index: 10;
+}
+
+.analog-stick {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.stick-visual {
+    width: 60px;
+    height: 60px;
+}
+
+
+.stick-label {
+    display: block;
+    color: var(--accent-cyan);
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.stick-values {
+    display: block;
+    color: var(--text-secondary);
+    font-family: 'Courier New', monospace;
+}
+
+.dpad-area {
+    position: absolute;
+    top: 122px;
+    left: 167px;
+    width: 90px;
+    height: 90px;
+    z-index: 10;
+}
+
+.dpad-area .dpad-btn {
+    position: absolute;
+    background: linear-gradient(135deg, #4a4a4a, #2a2a2a);
+    border: 2px solid #333;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.1s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.dpad-up {
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 25px;
+    height: 25px;
+    border-radius: 5px 5px 0 0;
+}
+
+.dpad-down {
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 25px;
+    height: 25px;
+    border-radius: 0 0 5px 5px;
+}
+
+.dpad-left {
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 25px;
+    height: 25px;
+    border-radius: 5px 0 0 5px;
+}
+
+.dpad-right {
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 25px;
+    height: 25px;
+    border-radius: 0 5px 5px 0;
+}
+
+.face-buttons-area {
+    position: absolute;
+    top: 115px;
+    right: 155px;
+    width: 110px;
+    height: 110px;
+    z-index: 10;
+}
+
+.face-buttons-area .face-btn {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4a4a4a, #2a2a2a);
+    border: 2px solid #333;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.1s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.shoulder-buttons-area {
+    position: absolute;
+    top: 40px;
+    left: 50px;
+    right: 50px;
+    z-index: 10;
+}
+
+.shoulder-btn {
+    position: absolute;
+    width: 60px;
+    height: 30px;
+    background: linear-gradient(135deg, #4a4a4a, #2a2a2a);
+    border: 2px solid #333;
+    border-radius: 5px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.1s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.l1-btn {
+    left: 120px;
+}
+
+.r1-btn {
+    right: 120px;
+}
+
+.trigger-buttons-area {
+    position: absolute;
+    top: 15px;
+    left: 50px;
+    right: 50px;
+    z-index: 10;
+}
+
+.trigger-container {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.left-trigger {
+    left: 120px;
+}
+
+.right-trigger {
+    right: 120px;
+}
+
+.trigger-btn {
+    width: 60px;
+    height: 25px;
+    background: linear-gradient(135deg, #4a4a4a, #2a2a2a);
+    border: 2px solid #333;
+    border-radius: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.1s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.trigger-indicator {
+    width: 50px;
+    height: 10px;
+    background: #2a2a2a;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid #333;
+}
+
+.trigger-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+    transition: width 0.1s ease;
+}
+
+.center-buttons-area {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 40px;
+    z-index: 10;
+}
+
+.center-btn {
+    position: absolute;
+    background: var(--controller-element);
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    border: 2px solid #333;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.1s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+
+.ps-btn {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+}
+
+.touchpad-area {
+    position: absolute;
+    top: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+}
+
+.touchpad-btn {
+    width: 160px;
+    height: 80px;
+    background: linear-gradient(135deg, #3a3a3a, #1a1a1a);
+    border: 2px solid #333;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.touchpad-surface {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, transparent, rgba(0, 212, 255, 0.1));
+    border-radius: 8px;
+}
+
+.dpad-area .dpad-btn.active,
+.face-buttons-area .face-btn.active,
+.shoulder-btn.active,
+.trigger-btn.active,
+.center-btn.active,
+.touchpad-btn.active {
+    background: var(--button-active);
+}
+
+.stick-visual.active .stick-indicator {
+    background: var(--button-active);
+}
+
+.controller-status-display {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.connection-info {
+    font-size: 1.2rem;
+    padding: 15px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.calibration-container {
+    text-align: center;
+}
+
+.calibration-status {
+    font-size: 1.3rem;
+    margin-bottom: 20px;
+    padding: 20px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.calibration-progress {
+    margin: 20px 0;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 10px;
+    background: #333;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.calibration-btn {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    border: none;
+    color: var(--text-primary);
+    padding: 15px 30px;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-glow);
+}
+
+.calibration-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 25px rgba(0, 212, 255, 0.5);
+}
+
+.calibration-btn:disabled {
+    background: #666;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+@media (max-width: 1024px) {
+    .ps5-controller-outline {
+        width: 600px;
+        height: 375px;
+    }
+    
+    .left-stick-area {
+        top: 190px;
+        left: 110px;
+    }
+    
+    .right-stick-area {
+        top: 240px;
+        right: 110px;
+    }
+    
+    .dpad-area {
+        top: 135px;
+        left: 60px;
+    }
+    
+    .face-buttons-area {
+        top: 135px;
+        right: 60px;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+    
+    .ps5-controller-outline {
+        width: 400px;
+        height: 250px;
+    }
+    
+    .left-stick-area {
+        top: 125px;
+        left: 75px;
+    }
+    
+    .right-stick-area {
+        top: 160px;
+        right: 75px;
+    }
+    
+    .dpad-area {
+        top: 90px;
+        left: 40px;
+        width: 60px;
+        height: 60px;
+    }
+    
+    .face-buttons-area {
+        top: 90px;
+        right: 40px;
+        width: 60px;
+        height: 60px;
+    }
+    
+    .stick-visual {
+        width: 45px;
+        height: 45px;
+    }
+    
+    .stick-indicator {
+        width: 15px;
+        height: 15px;
+    }
+    
+    .face-buttons-area .face-btn,
+    .dpad-area .dpad-btn {
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
+    }
+    
+    .touchpad-btn {
+        width: 120px;
+        height: 60px;
+    }
+    
+    header h1 {
+        font-size: 2rem;
+    }
+    
+    .tab-button {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+}
+
+
+
+.site-footer {
+    height: 5vh;
+    width: 100%;
+    padding: 0px 20px 32px;
+    text-align: center;
+    color: var(--text-light);
+    font-size: 0.85rem;
+}
+.site-footer a {
+    color: var(--accent-cyan);
+    text-decoration: none;
+    transition: color .2s;
+}
+.site-footer a:hover {
+    color: var(--accent-purple);
+}
+.site-footer .footer-inner { max-width: 900px; margin: 0 auto; }
+
+
+/* ============================================================
+   Stage progress nav (shown on stage1.html / stage2.html)
+   ============================================================ */
+.stage-nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 28px;
+    flex-wrap: wrap;
+}
+
+.stage-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--text-light);
+    padding: 8px 18px 8px 8px;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-decoration: none;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.stage-pill .stage-pill-num {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--controller-element);
+    color: var(--text-light);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.stage-pill.done .stage-pill-num {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    color: var(--bg-dark);
+}
+
+.stage-pill.current {
+    color: var(--text-white);
+    border-color: var(--accent-cyan);
+    box-shadow: var(--shadow-glow);
+}
+
+.stage-pill.current .stage-pill-num {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    color: var(--bg-dark);
+}
+
+.stage-pill.upcoming {
+    opacity: 0.55;
+    cursor: default;
+    pointer-events: none;
+}
+
+.stage-nav-arrow {
+    color: var(--text-light);
+    font-size: 1rem;
+}
+
+
+/* ============================================================
+   Welcome / landing page
+   ============================================================ */
+.welcome-hero {
+    text-align: center;
+    max-width: 720px;
+    margin: 0 auto 40px;
+}
+
+.welcome-hero .eyebrow {
+    display: inline-block;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.78rem;
+    color: var(--accent-cyan);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    padding: 6px 14px;
+    border-radius: 999px;
+    margin-bottom: 18px;
+}
+
+.welcome-hero p {
+    color: var(--text-secondary);
+    font-size: 1.05rem;
+    line-height: 1.6;
+    margin-top: 14px;
+}
+
+.stage-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    max-width: 980px;
+    margin: 0 auto 36px;
+}
+
+.stage-card {
+    position: relative;
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 28px 26px 26px;
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.stage-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-glow);
+}
+
+.stage-card-step {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    color: var(--bg-dark);
+    font-weight: 800;
+    font-size: 1.1rem;
+}
+
+.stage-card h2 {
+    font-size: 1.35rem;
+    color: var(--text-white);
+}
+
+.stage-card p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.55;
+    flex-grow: 1;
+}
+
+.stage-card ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 4px 0 6px;
+}
+
+.stage-card ul li {
+    color: var(--text-light);
+    font-size: 0.85rem;
+    padding-left: 18px;
+    position: relative;
+}
+
+.stage-card ul li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 7px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-cyan);
+}
+
+.stage-card-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    align-self: flex-start;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    color: var(--bg-dark);
+    font-weight: 700;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    margin-top: 4px;
+}
+
+.welcome-note {
+    max-width: 640px;
+    margin: 0 auto;
+    text-align: center;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    color: var(--text-light);
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+
+/* ============================================================
+   Stage 2: RDM staircase calibration task
+   ============================================================ */
+.rdm-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.rdm-status-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.rdm-status-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.rdm-status-card .rdm-status-label {
+    display: block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-light);
+    margin-bottom: 6px;
+}
+
+.rdm-status-card .rdm-status-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-white);
+    font-family: 'Courier New', monospace;
+}
+
+.rdm-stage-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+    background: #05070a;
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.rdm-stage-wrap canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.rdm-arrow {
+    position: absolute;
+    color: var(--text-light);
+    font-size: 1.4rem;
+    opacity: 0.35;
+    transition: opacity 0.15s ease, color 0.15s ease;
+    pointer-events: none;
+}
+
+.rdm-arrow.up { top: 10px; left: 50%; transform: translateX(-50%); }
+.rdm-arrow.down { bottom: 10px; left: 50%; transform: translateX(-50%); }
+.rdm-arrow.left { left: 10px; top: 50%; transform: translateY(-50%); }
+.rdm-arrow.right { right: 10px; top: 50%; transform: translateY(-50%); }
+
+.rdm-arrow.active {
+    opacity: 1;
+    color: var(--accent-cyan);
+    text-shadow: var(--shadow-glow);
+}
+
+.rdm-feedback-badge {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 10px 22px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.03em;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+}
+
+.rdm-feedback-badge.show {
+    opacity: 1;
+}
+
+.rdm-feedback-badge.correct {
+    background: rgba(34, 224, 160, 0.18);
+    border: 1px solid var(--accent-cyan);
+    color: var(--accent-cyan);
+}
+
+.rdm-feedback-badge.incorrect {
+    background: rgba(255, 90, 90, 0.15);
+    border: 1px solid #ff5a5a;
+    color: #ff9494;
+}
+
+.rdm-recenter-badge {
+    background: rgba(255, 200, 60, 0.15);
+    border: 1px solid #ffcc4d;
+    color: #ffcc4d;
+}
+
+.rdm-mini-stick {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 4px;
+}
+
+.rdm-mini-stick .stick-circle {
+    width: 90px;
+    height: 90px;
+}
+
+.rdm-instructions {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: var(--text-light);
+    font-size: 0.85rem;
+    line-height: 1.55;
+}
+
+.rdm-instructions b {
+    color: var(--controller-active);
+}
+
+.rdm-complete {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.rdm-complete h2 {
+    font-size: 1.6rem;
+    color: var(--text-white);
+    margin-bottom: 10px;
+}
+
+.rdm-complete p {
+    color: var(--text-secondary);
+    max-width: 480px;
+    margin: 0 auto 18px;
+    line-height: 1.6;
+}
+
+.rdm-complete .final-coherence {
+    font-family: 'Courier New', monospace;
+    font-size: 2rem;
+    color: var(--accent-cyan);
+    text-shadow: var(--shadow-glow);
+    margin-bottom: 20px;
+}
+
+.rdm-complete-stats {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.rdm-complete-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.rdm-complete-stat-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-light);
+}
+
+.rdm-complete-stat-value {
+    font-family: 'Courier New', monospace;
+    font-size: 2rem;
+    color: var(--accent-cyan);
+    text-shadow: var(--shadow-glow);
+}
+
+.rdm-hidden {
+    display: none !important;
+}
+
+@media (max-width: 1200px) {
+    .stage-cards {
+        grid-template-columns: 1fr;
+    }
+    .rdm-status-row {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .rdm-status-row {
+        grid-template-columns: 1fr;
+    }
+}
+.site-footer .links, .site-footer .contribute { display: none; }
+    </style>
+
+    
+</head>
+<body>
+    <div class="main-container">
+    <div class="container">
+        <header>
+            <h1>PlayStation Gamepad Visualiser</h1>
+            <p>This is a PlayStation gamepad visualiser. Explore the features and functionality of your game controller. Press any button and see how the onscreen controller responds!</p>
+        </header>
+        
+        <main>
+            <div class="controller-layout">
+                
+                <div class="info-panel">
+                    <div class="controller-info">
+                        <h3>Controller Status</h3>
+                        <div class="controller-details">
+                            <div class="detail-row">
+                                <span class="label">CONNECTED</span>
+                                <span class="label">VIBRATION</span>
+                                <span class="label">VIBRATE</span>
+                            </div>
+                            <div class="detail-row values">
+                                <span id="controller-connected">No</span>
+                                <span id="controller-vibration">No</span>
+                                <button id="vibration-test" disabled>Test</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    
+                    <div class="button-status">
+                        <div class="button-grid">
+                            <div class="button-row">
+                                <div class="btn-cell"><span class="btn-label">Cross</span><span id="b0-value">0.00</span></div>
+                                <div class="btn-cell"><span class="btn-label">Circle</span><span id="b1-value">0.00</span></div>
+                                <div class="btn-cell"><span class="btn-label">Square</span><span id="b2-value">0.00</span></div>
+                                <div class="btn-cell"><span class="btn-label">Triangle</span><span id="b3-value">0.00</span></div>
+                                <div class="btn-cell"><span class="btn-label">L1</span><span id="b4-value">0.00</span></div>
+                                <div class="btn-cell"><span class="btn-label">R1</span><span id="b5-value">0.00</span></div>
+                                <div class="btn-cell"><span class="btn-label">L2</span><span id="b6-value">0.00</span></div>
+                                <div class="btn-cell"><span class="btn-label">R2</span><span id="b7-value">0.00</span></div>
+                            </div>
+                            <div class="button-row">
+                                <div class="btn-cell"><span class="btn-label">Share</span><span id="b8-value">0.00</span></div>
+                                <div class="btn-cell"><span class="btn-label">Options</span><span id="b9-value">0.00</span></div>
+                                <div class="btn-cell"><span class="btn-label">L3</span><span id="b10-value">0.00</span></div>
+                                <div class="btn-cell"><span class="btn-label">R3</span><span id="b11-value">0.00</span></div>
+                                <div class="btn-cell"><span class="btn-label">D-Up</span><span id="b12-value">0.00</span></div>
+                                <div class="btn-cell"><span class="btn-label">D-Down</span><span id="b13-value">0.00</span></div>
+                                <div class="btn-cell"><span class="btn-label">D-Left</span><span id="b14-value">0.00</span></div>
+                                <div class="btn-cell"><span class="btn-label">D-Right</span><span id="b15-value">0.00</span></div>
+                            </div>
+                            <div class="button-row">
+                                <div class="btn-cell"><span class="btn-label">PS</span><span id="b16-value">0.00</span></div>
+                            </div>
+                        </div>
+                        
+                        
+                        <div class="axis-status">
+                            <div class="axis-row">
+                                <div class="axis-cell"><span class="axis-label">AXIS 0</span><span id="axis0-value">0.00787</span></div>
+                                <div class="axis-cell"><span class="axis-label">AXIS 1</span><span id="axis1-value">0.00787</span></div>
+                                <div class="axis-cell"><span class="axis-label">AXIS 2</span><span id="axis2-value">0.00787</span></div>
+                                <div class="axis-cell"><span class="axis-label">AXIS 3</span><span id="axis3-value">0.00787</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+
+
+
+                
+                <div class="visual-panel">
+
+                    <div class="controller-visual">
+                        <div class="controller-outline">
+                            <div class="trigger left-trigger" id="l2"></div>
+                            <div class="trigger right-trigger" id="r2"></div>
+                            <div class="shoulder left-shoulder" id="l1"></div>
+                            <div class="shoulder right-shoulder" id="r1"></div>
+                            <div class="controller-body">
+                                <div class="dpad">
+                                    <div class="dpad-btn" id="dpad-up"></div>
+                                    <div class="dpad-btn" id="dpad-down"></div>
+                                    <div class="dpad-btn" id="dpad-left"></div>
+                                    <div class="dpad-btn" id="dpad-right"></div>
+                                </div>
+                                <div class="face-buttons">
+                                    <div class="face-btn" id="triangle"></div>
+                                    <div class="face-btn" id="square"></div>
+                                    <div class="face-btn" id="circle"></div>
+                                    <div class="face-btn" id="cross"></div>
+                                </div>
+                                <div class="center-buttons">
+                                    <div class="center-btn" id="share"></div>
+                                    <div class="center-btn" id="options"></div>
+                                    <div class="center-btn" id="ps"></div>
+                                    <div class="center-btn" id="touchpad"></div>
+                                </div>
+
+                                <div class="controller-visual-sticks">
+                                    <div class="controller-stick-container">
+                                        <div class="controller-stick-circle">
+                                            <div class="controller-stick-dot" id="visual-left-stick"></div>
+                                        </div>
+                                    </div>
+                                    <div class="controller-stick-container">
+                                        <div class="controller-stick-circle">
+                                            <div class="controller-stick-dot" id="visual-right-stick"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                    
+                    
+                    <div class="stick-visualizations">
+                        <div class="stick-container">
+                            <div class="stick-circle" id="left-stick">
+                                <div class="stick-line"></div>
+                                <div class="stick-dot"></div>
+                            </div>
+                            <div class="stick-info">Left Stick</div>
+                        </div>
+                        
+                        <div class="stick-container">
+                            <div class="stick-circle" id="right-stick">
+                                <div class="stick-line"></div>
+                                <div class="stick-dot"></div>
+                            </div>
+                            <div class="stick-info">Right Stick</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </main>
+    </div>
+    </div>
+    
+    <script>
+class PS5ControllerTester {
+  animationFrame = 0
+  PREVIEW_MAX_PX = 22
+
+  constructor() {
+    this.controllerState = {
+      connected: false,
+      gamepad: null,
+      buttonStates: new Map(),
+      stickPositions: { left: { x: 0, y: 0 }, right: { x: 0, y: 0 } },
+      triggerValues: { left: 0, right: 0 }
+    }
+
+    this.buttonMappings = new Map([
+      [0, "cross"],
+      [1, "circle"],
+      [2, "square"],
+      [3, "triangle"],
+      [4, "l1"],
+      [5, "r1"],
+      [6, "l2"],
+      [7, "r2"],
+      [8, "share"],
+      [9, "options"],
+      [10, "left-stick"],
+      [11, "right-stick"],
+      [12, "dpad-up"],
+      [13, "dpad-down"],
+      [14, "dpad-left"],
+      [15, "dpad-right"],
+      [16, "ps"]
+    ])
+
+    this.init()
+  }
+
+  init() {
+    this.setupEventListeners()
+    this.startGamepadLoop()
+  }
+
+  setupEventListeners() {
+    window.addEventListener("gamepadconnected", e => {
+      console.log("Controller connected:", e.gamepad)
+      this.handleControllerConnection(e.gamepad)
+    })
+    window.addEventListener("gamepaddisconnected", e => {
+      console.log("Controller disconnected:", e.gamepad)
+      this.handleControllerDisconnection()
+    })
+    const vibrationTestBtn = document.getElementById("vibration-test")
+    vibrationTestBtn?.addEventListener("click", () => {
+      this.testVibration()
+    })
+  }
+
+  setupTabNavigation() {
+    const tabButtons = document.querySelectorAll(".tab-button")
+    const tabPanels = document.querySelectorAll(".tab-panel")
+    tabButtons.forEach(button => {
+      button.addEventListener("click", () => {
+        const targetTab = button.getAttribute("data-tab")
+        tabButtons.forEach(btn => btn.classList.remove("active"))
+        tabPanels.forEach(panel => panel.classList.remove("active"))
+        button.classList.add("active")
+        const targetPanel = document.getElementById(targetTab)
+        if (targetPanel) {
+          targetPanel.classList.add("active")
+        }
+      })
+    })
+  }
+
+  handleControllerConnection(gamepad) {
+    this.controllerState.gamepad = gamepad
+    this.controllerState.connected = true
+    const connectedElement = document.getElementById("controller-connected")
+    if (connectedElement) connectedElement.textContent = "Yes"
+    this.updateVibrationStatus()
+  }
+
+  updateVibrationStatus() {
+    const vibrationElement = document.getElementById("controller-vibration")
+    const testButton = document.getElementById("vibration-test")
+    let hasVibration = false
+    if (this.controllerState.gamepad) {
+      const gamepad = this.controllerState.gamepad
+      if (gamepad.vibrationActuator) {
+        hasVibration = true
+      } else if (
+        gamepad.hapticActuators &&
+        gamepad.hapticActuators.length > 0
+      ) {
+        hasVibration = true
+      } else if (typeof gamepad.vibrate === "function") {
+        hasVibration = true
+      }
+    }
+    if (vibrationElement) {
+      vibrationElement.textContent = hasVibration ? "Yes" : "No"
+    }
+    if (testButton) {
+      testButton.disabled = !hasVibration
+    }
+  }
+
+  async testVibration() {
+    if (!this.controllerState.gamepad || !this.controllerState.connected) {
+      alert("No controller connected!")
+      return
+    }
+    const gamepad = this.controllerState.gamepad
+    const testButton = document.getElementById("vibration-test")
+    try {
+      if (testButton) {
+        testButton.disabled = true
+        testButton.textContent = "Vibrating..."
+      }
+      let vibrationSuccess = false
+      if (gamepad.vibrationActuator && gamepad.vibrationActuator.playEffect) {
+        try {
+          console.log("Trying vibrationActuator API...")
+          await gamepad.vibrationActuator.playEffect("dual-rumble", {
+            duration: 500,
+            strongMagnitude: 1.0,
+            weakMagnitude: 1.0
+          })
+          await new Promise(resolve => setTimeout(resolve, 100))
+          await gamepad.vibrationActuator.playEffect("dual-rumble", {
+            duration: 500,
+            strongMagnitude: 1.0,
+            weakMagnitude: 1.0
+          })
+          await new Promise(resolve => setTimeout(resolve, 100))
+          await gamepad.vibrationActuator.playEffect("dual-rumble", {
+            duration: 400,
+            strongMagnitude: 1.0,
+            weakMagnitude: 1.0
+          })
+          vibrationSuccess = true
+          console.log("vibrationActuator API successful")
+        } catch (e) {
+          console.warn("vibrationActuator failed:", e)
+        }
+      }
+      if (
+        !vibrationSuccess &&
+        gamepad.hapticActuators &&
+        gamepad.hapticActuators.length > 0
+      ) {
+        try {
+          console.log("Trying hapticActuators API...")
+          const actuator = gamepad.hapticActuators[0]
+          if (actuator.playEffect) {
+            await actuator.playEffect("dual-rumble", {
+              duration: 1000,
+              strongMagnitude: 1.0,
+              weakMagnitude: 1.0
+            })
+            vibrationSuccess = true
+            console.log("hapticActuators API successful")
+          }
+        } catch (e) {
+          console.warn("hapticActuators failed:", e)
+        }
+      }
+      if (!vibrationSuccess && typeof gamepad.vibrate === "function") {
+        try {
+          console.log("Trying legacy vibrate API...")
+          gamepad.vibrate(1.0, 1.0, 1000)
+          vibrationSuccess = true
+          console.log("legacy vibrate API successful")
+        } catch (e) {
+          console.warn("legacy vibrate failed:", e)
+        }
+      }
+      if (!vibrationSuccess) {
+        throw new Error("No supported vibration API found")
+      }
+      console.log("Vibration test completed successfully")
+    } catch (error) {
+      console.error("Vibration test failed:", error)
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error"
+      alert(`Vibration test failed: ${errorMessage}`)
+    } finally {
+      setTimeout(() => {
+        if (testButton) {
+          testButton.disabled = false
+          testButton.textContent = "Test"
+        }
+      }, 2000)
+    }
+  }
+
+  handleControllerDisconnection() {
+    this.controllerState.connected = false
+    this.controllerState.gamepad = null
+    const connectedElement = document.getElementById("controller-connected")
+    if (connectedElement) connectedElement.textContent = "No"
+    const vibrationElement = document.getElementById("controller-vibration")
+    const testButton = document.getElementById("vibration-test")
+    if (vibrationElement) vibrationElement.textContent = "No"
+    if (testButton) {
+      testButton.disabled = true
+      testButton.textContent = "Test"
+    }
+    this.resetVisualElements()
+  }
+
+  startGamepadLoop() {
+    const loop = () => {
+      this.updateGamepadState()
+      this.updateVisualElements()
+      this.animationFrame = requestAnimationFrame(loop)
+    }
+    loop()
+  }
+
+  updateGamepadState() {
+    const gamepads = navigator.getGamepads()
+    if (!this.controllerState.connected || !gamepads[0]) {
+      return
+    }
+    const gamepad = gamepads[0]
+    if (!gamepad) return
+    this.controllerState.gamepad = gamepad
+    gamepad.buttons.forEach((button, index) => {
+      const wasPressed = this.controllerState.buttonStates.get(index) || false
+      const isPressed = button.pressed
+      this.controllerState.buttonStates.set(index, isPressed)
+    })
+    this.controllerState.stickPositions.left = this.getRawStickPosition(
+      gamepad.axes[0],
+      gamepad.axes[1],
+      "left"
+    )
+    this.controllerState.stickPositions.right = this.getRawStickPosition(
+      gamepad.axes[2],
+      gamepad.axes[3],
+      "right"
+    )
+    this.controllerState.triggerValues.left = gamepad.buttons[6]
+      ? gamepad.buttons[6].value
+      : 0
+    this.controllerState.triggerValues.right = gamepad.buttons[7]
+      ? gamepad.buttons[7].value
+      : 0
+  }
+
+  getRawStickPosition(rawX, rawY, stick) {
+    return { x: rawX, y: rawY }
+  }
+
+  updateVisualElements() {
+    if (!this.controllerState.connected) return
+    this.updateButtonValues()
+    this.updateAxisValues()
+    this.updateButtonVisuals()
+    this.updateStickVisual("left", this.controllerState.stickPositions.left)
+    this.updateStickVisual("right", this.controllerState.stickPositions.right)
+    this.updatePreviewStick("left")
+    this.updatePreviewStick("right")
+    this.updateTriggerVisual("l2", this.controllerState.triggerValues.left)
+    this.updateTriggerVisual("r2", this.controllerState.triggerValues.right)
+  }
+
+  updateButtonValues() {
+    if (!this.controllerState.gamepad) return
+    this.controllerState.gamepad.buttons.forEach((button, index) => {
+      const valueElement = document.getElementById(`b${index}-value`)
+      if (valueElement) {
+        valueElement.textContent = button.value.toFixed(2)
+        const cellElement = valueElement.parentElement
+        if (cellElement) {
+          if (button.pressed) {
+            cellElement.classList.add("active")
+          } else {
+            cellElement.classList.remove("active")
+          }
+        }
+      }
+    })
+  }
+
+  updateAxisValues() {
+    if (!this.controllerState.gamepad) return
+    this.controllerState.gamepad.axes.forEach((axisValue, index) => {
+      const valueElement = document.getElementById(`axis${index}-value`)
+      if (valueElement) {
+        valueElement.textContent = axisValue.toFixed(5)
+        const cellElement = valueElement.parentElement
+        if (cellElement) {
+          if (Math.abs(axisValue) > 0.1) {
+            cellElement.classList.add("active")
+          } else {
+            cellElement.classList.remove("active")
+          }
+        }
+      }
+    })
+  }
+
+  updateButtonVisuals() {
+    if (!this.controllerState.gamepad) return
+    this.controllerState.gamepad.buttons.forEach((button, index) => {
+      let elementId = ""
+      switch (index) {
+        case 12:
+          elementId = "dpad-up"
+          break
+        case 13:
+          elementId = "dpad-down"
+          break
+        case 14:
+          elementId = "dpad-left"
+          break
+        case 15:
+          elementId = "dpad-right"
+          break
+        case 0:
+          elementId = "cross"
+          break
+        case 1:
+          elementId = "circle"
+          break
+        case 2:
+          elementId = "square"
+          break
+        case 3:
+          elementId = "triangle"
+          break
+        case 4:
+          elementId = "l1"
+          break
+        case 5:
+          elementId = "r1"
+          break
+        case 8:
+          elementId = "share"
+          break
+        case 9:
+          elementId = "options"
+          break
+        case 16:
+          elementId = "ps"
+          break
+      }
+      if (elementId) {
+        const element = document.getElementById(elementId)
+        if (element) {
+          if (button.pressed) {
+            element.classList.add("active")
+          } else {
+            element.classList.remove("active")
+          }
+        }
+      }
+    })
+  }
+
+  updateStickVisual(stick, position) {
+    const stickCircle = document.getElementById(`${stick}-stick`)
+    const stickDot = stickCircle?.querySelector(".stick-dot")
+    const stickLine = stickCircle?.querySelector(".stick-line")
+    if (stickDot && this.controllerState.gamepad) {
+      const gamepad = this.controllerState.gamepad
+      const rawX = stick === "left" ? gamepad.axes[0] : gamepad.axes[2]
+      const rawY = stick === "left" ? gamepad.axes[1] : gamepad.axes[3]
+      const maxOffset = 50
+      const offsetX = rawX * maxOffset
+      const offsetY = rawY * maxOffset
+      stickDot.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`
+      stickDot.style.background = "var(--controller-stick-dot)"
+      if (stickLine) {
+        const lineDistance = Math.sqrt(offsetX * offsetX + offsetY * offsetY)
+        const angle = Math.atan2(offsetY, offsetX) * (180 / Math.PI)
+        stickLine.style.width = `${lineDistance}px`
+        stickLine.style.transform = `rotate(${angle}deg)`
+        stickLine.style.display = lineDistance > 1 ? "block" : "none"
+        stickLine.style.background = "var(--text-secondary)"
+      }
+    }
+    if (stickCircle) {
+      const gamepad = this.controllerState.gamepad
+      if (gamepad) {
+        const stickButtonIndex = stick === "left" ? 10 : 11
+        if (gamepad.buttons[stickButtonIndex]?.pressed) {
+          stickCircle.classList.add("active")
+        } else {
+          stickCircle.classList.remove("active")
+        }
+      }
+    }
+  }
+
+  updatePreviewStick(stick) {
+    if (!this.controllerState.gamepad) return
+    const gp = this.controllerState.gamepad
+    const rawX = stick === "left" ? gp.axes[0] : gp.axes[2]
+    const rawY = stick === "left" ? gp.axes[1] : gp.axes[3]
+    const dot = document.getElementById(`visual-${stick}-stick`)
+    if (!dot) return
+    const r = this.PREVIEW_MAX_PX
+    let x = rawX * r
+    let y = rawY * r
+    const len = Math.hypot(x, y)
+    if (len > r) {
+      x = (x / len) * r
+      y = (y / len) * r
+    }
+    dot.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`
+    const distance = Math.hypot(rawX, rawY)
+    const intensity = Math.min(distance, 1.0)
+    if (intensity > 0.1) {
+      const grayValue = Math.floor(26 + intensity * 80)
+      dot.style.background = `rgb(${grayValue}, ${grayValue}, ${grayValue})`
+    } else {
+      dot.style.background = "var(--controller-stick-dot)"
+    }
+    const ring = dot.closest(".controller-stick-circle")
+    const stickBtnIdx = stick === "left" ? 10 : 11
+    ring?.classList.toggle("active", !!gp.buttons[stickBtnIdx]?.pressed)
+  }
+
+  updateTriggerVisual(trigger, value) {
+    const triggerButton = document.getElementById(trigger)
+    const triggerFill = document.getElementById(`${trigger}-fill`)
+    if (triggerFill) {
+      triggerFill.style.width = `${value * 100}%`
+    }
+    if (triggerButton) {
+      if (value > 0.02) {
+        triggerButton.classList.add("active")
+        const intensity = Math.min(value, 1.0)
+        const startR = 42,
+          startG = 42,
+          startB = 42
+        const endR = 0,
+          endG = 120,
+          endB = 212
+        const r = Math.floor(startR + (endR - startR) * intensity)
+        const g = Math.floor(startG + (endG - startG) * intensity)
+        const b = Math.floor(startB + (endB - startB) * intensity)
+        triggerButton.style.background = `rgb(${r}, ${g}, ${b})`
+      } else {
+        triggerButton.classList.remove("active")
+        triggerButton.style.background = ""
+      }
+    }
+  }
+
+  resetVisualElements() {
+    document.querySelectorAll(".active").forEach(element => {
+      element.classList.remove("active")
+    })
+    ;["left-stick", "right-stick"].forEach(id => {
+      document
+        .querySelector(`#${id} .stick-dot`)
+        ?.style.setProperty("transform", "translate(-50%, -50%)")
+      document
+        .querySelector(`#${id} .stick-line`)
+        ?.style.setProperty("display", "none")
+    })
+    ;["visual-left-stick", "visual-right-stick"].forEach(id => {
+      document
+        .getElementById(id)
+        ?.style.setProperty("transform", "translate(-50%, -50%)")
+    })
+    const l2Fill = document.getElementById("l2-fill")
+    const r2Fill = document.getElementById("r2-fill")
+    if (l2Fill) l2Fill.style.width = "0%"
+    if (r2Fill) r2Fill.style.width = "0%"
+    const leftValues = document.getElementById("left-stick-values")
+    const rightValues = document.getElementById("right-stick-values")
+    if (leftValues) leftValues.textContent = "X: 0.00, Y: 0.00"
+    if (rightValues) rightValues.textContent = "X: 0.00, Y: 0.00"
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  new PS5ControllerTester()
+})
+
+    </script>
+</body>
+</html>
+
