@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XBOX Visualiser</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#121933;
+      --panel2:#182243;
+      --text:#eaf0ff;
+      --muted:#aab7da;
+      --line:rgba(255,255,255,.12);
+      --accent:#60a5fa;
+      --accent2:#34d399;
+      --warn:#fbbf24;
+      --danger:#fb7185;
+      --shadow:0 18px 50px rgba(0,0,0,.35);
+      --radius:18px;
+    }
+
+    *{box-sizing:border-box}
+    html, body { height: 100%; }
+    body{
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(96,165,250,.18), transparent 45%),
+        radial-gradient(1000px 700px at 100% 0%, rgba(52,211,153,.12), transparent 40%),
+        linear-gradient(180deg,#0a0f1d 0%, #0b1020 100%);
+      color:var(--text);
+      min-height:100vh;
+    }
+
+    .wrap{
+      max-width:1280px;
+      margin:0 auto;
+      padding:24px;
+    }
+
+    header{
+      position:sticky;
+      top:0;
+      z-index:20;
+      backdrop-filter:blur(14px);
+      background:rgba(11,16,32,.72);
+      border-bottom:1px solid var(--line);
+    }
+
+    .top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:20px;
+      flex-wrap:wrap;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:14px;
+    }
+
+    .logo{
+      width:65px;
+      height:38px;
+      border-radius:12px;
+      display:grid;
+      place-items:center;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      color:#081120;
+      font-weight:900;
+      box-shadow:var(--shadow);
+    }
+
+    h1{
+      margin:0;
+      font-size:20px;
+      line-height:1.1;
+    }
+
+    .sub{
+      color:var(--muted);
+      font-size:13px;
+      margin-top:4px;
+    }
+
+    .controls{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .pill{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:999px;
+      font-size:13px;
+      white-space:nowrap;
+    }
+
+    select,button,input[type="checkbox"]{
+      accent-color:var(--accent);
+    }
+
+    select,button{
+      background:var(--panel2);
+      color:var(--text);
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px 12px;
+      font-size:14px;
+    }
+
+    button{
+      cursor:pointer;
+    }
+
+    button:hover{
+      filter:brightness(1.08);
+    }
+
+    .btnPrimary{
+      background:linear-gradient(135deg, rgba(96,165,250,.18), rgba(52,211,153,.14));
+      border-color:rgba(96,165,250,.28);
+      font-weight:700;
+    }
+
+    .btnGhost{
+      background:rgba(255,255,255,.04);
+      border-color:var(--line);
+    }
+
+    main{
+      padding:18px 0 36px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:minmax(640px,1fr) 380px;
+      gap:18px;
+    }
+
+    @media (max-width:1100px){
+      .grid{
+        grid-template-columns:1fr;
+      }
+    }
+
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.025));
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .card-h{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:16px;
+      padding:16px 18px 12px;
+      border-bottom:1px solid var(--line);
+    }
+
+    .card-b{
+      padding:18px;
+    }
+
+    .title{
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+
+    .hint{
+      color:var(--muted);
+      font-size:13px;
+      margin-top:4px;
+    }
+
+    .viz-wrap{
+      padding:14px 18px 18px;
+    }
+
+    svg{
+      width:100%;
+      height:auto;
+      display:block;
+      background:
+        radial-gradient(circle at 50% 20%, rgba(255,255,255,.06), transparent 35%),
+        linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+      border:1px solid var(--line);
+      border-radius:16px;
+    }
+
+    .gp-base{
+      fill:#f7f8fc;
+      stroke:#111827;
+      stroke-width:5;
+    }
+
+    .gp-accent{
+      fill:#e7ebf7;
+      stroke:#111827;
+      stroke-width:3;
+    }
+
+    .gp-part{
+      fill:#ffffff;
+      stroke:#111827;
+      stroke-width:3;
+      transition:filter .08s linear, transform .08s linear, fill .08s linear, opacity .08s linear;
+      transform-box:fill-box;
+      transform-origin:center;
+    }
+
+    .gp-text{
+      fill:#111827;
+      font-size:12px;
+      font-weight:800;
+      user-select:none;
+      pointer-events:none;
+    }
+
+    .on{
+      fill:rgba(96,165,250,.65) !important;
+      filter:drop-shadow(0 0 7px rgba(96,165,250,.9));
+    }
+
+    .triggerFill{
+      fill:rgba(52,211,153,.72);
+      stroke:#0f172a;
+      stroke-width:2;
+      opacity:.15;
+      transition:height .05s linear, y .05s linear, opacity .05s linear;
+    }
+
+    .stickRing{
+      fill:rgba(15,23,42,.12);
+      stroke:#111827;
+      stroke-width:3;
+    }
+
+    .stickDead{
+      fill:rgba(251,191,36,.18);
+      stroke:none;
+    }
+
+    .stickDot{
+      fill:rgba(96,165,250,.95);
+      stroke:#0f172a;
+      stroke-width:2.5;
+      transition:cx .03s linear, cy .03s linear, filter .08s linear;
+      filter:drop-shadow(0 0 4px rgba(96,165,250,.55));
+    }
+
+    .stickDot.active{
+      filter:drop-shadow(0 0 8px rgba(96,165,250,.95));
+    }
+
+    .stickLabel{
+      fill:#111827;
+      font-size:12px;
+      font-weight:800;
+      text-anchor:middle;
+    }
+
+    .mono{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    }
+
+    .bars{
+      display:grid;
+      gap:10px;
+    }
+
+    .barline{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      font-size:13px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+
+    .bar{
+      position:relative;
+      height:12px;
+      border-radius:999px;
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--line);
+      overflow:hidden;
+    }
+
+    .bar > i{
+      display:block;
+      height:100%;
+      width:50%;
+      background:linear-gradient(90deg, rgba(96,165,250,.88), rgba(52,211,153,.82));
+      transition:width .04s linear;
+    }
+
+    .row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+    }
+
+    @media (max-width:720px){
+      .row{
+        grid-template-columns:1fr;
+      }
+    }
+
+    .kpi{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:rgba(255,255,255,.03);
+    }
+
+    .kpi .lbl{
+      color:var(--muted);
+      font-size:12px;
+      margin-bottom:8px;
+    }
+
+    .kpi .val{
+      font-size:14px;
+      word-break:break-word;
+    }
+
+    .muted{
+      color:var(--muted);
+    }
+
+    .small{
+      font-size:12px;
+    }
+
+    .vibPanel{
+      margin-top:12px;
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:rgba(255,255,255,.03);
+    }
+
+    .vibRow{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .icon{
+      width:16px;
+      height:16px;
+      vertical-align:-3px;
+      margin-right:6px;
+    }
+
+    .note{
+      margin-top:12px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.45;
+    }
+
+    code{
+      color:var(--text);
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--line);
+      border-radius:8px;
+      padding:2px 6px;
+    }
+
+    pre{
+      margin:0;
+      white-space:pre-wrap;
+    }
+
+    .appShell.hidden{
+      display:none;
+    }
+
+    .screen{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px;
+    }
+
+    .screen.hidden{
+      display:none;
+    }
+
+    .screenCard{
+      width:min(820px, 100%);
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.025));
+      border:1px solid var(--line);
+      border-radius:28px;
+      box-shadow:var(--shadow);
+      padding:34px;
+    }
+
+    .screenCard h2{
+      margin:0 0 10px;
+      font-size:32px;
+    }
+
+    .screenCard p{
+      color:var(--muted);
+      line-height:1.6;
+      margin:0 0 12px;
+      font-size:15px;
+    }
+
+    .screenGrid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+      margin:22px 0 24px;
+    }
+
+    @media (max-width:760px){
+      .screenGrid{
+        grid-template-columns:1fr;
+      }
+      .screenCard{
+        padding:24px;
+      }
+      .screenCard h2{
+        font-size:26px;
+      }
+    }
+
+    .screenBox{
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:16px;
+      background:rgba(255,255,255,.03);
+    }
+
+    .screenBox h3{
+      margin:0 0 8px;
+      font-size:16px;
+    }
+
+    .screenBox p{
+      margin:0;
+      font-size:14px;
+    }
+
+    .screenActions{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:18px;
+    }
+
+    .screenStatus{
+      margin-top:14px;
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    .exitCard{
+      width:min(760px, 100%);
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.025));
+      border:1px solid var(--line);
+      border-radius:28px;
+      box-shadow:var(--shadow);
+      padding:34px;
+      text-align:center;
+    }
+
+    .exitCard h2{
+      margin:0 0 10px;
+      font-size:30px;
+    }
+
+    .exitCard p{
+      color:var(--muted);
+      line-height:1.6;
+      margin:0 0 14px;
+      font-size:15px;
+    }
+
+    #svg-center-group.on path {
+      filter: drop-shadow(0 0 6px #22c55e);
+    }
+  </style>
+</head>
+<body>
+  
+  <div id="appShell" class="appShell">
+    <header>
+      <div class="wrap">
+        <div class="top">
+          <div class="brand">
+            
+            <div>
+              <h1>XBox Gamepad Visualiser</h1>
+              <div class="sub">See your Device in action!</div>
+            </div>
+          </div>
+
+          <div class="controls">
+            <span class="pill">Status: <b id="status">No controller</b></span>
+            <select id="padSelect" aria-label="Gamepad selection" disabled></select>
+            <button id="calBtn" type="button" title="Calibrate current stick centre" disabled>Calibrate centre</button>
+            <button id="doneBtn" type="button" class="btnGhost" title="Finish and exit">I am done</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="wrap">
+        <div class="grid">
+          <section class="card">
+            <div class="card-h">
+              <div>
+                <div class="title">Controller</div>
+                <div class="hint">Buttons light up and thumbsticks visibly move as you interact with the device you're holding.</div>
+              </div>
+              <div class="hint mono" id="padMeta">—</div>
+            </div>
+
+            <div class="viz-wrap">
+
+              <!-- controller shell -->
+              <svg id="viz" viewBox="0 0 580.03 580" role="img" aria-label="Gamepad visualisation">
+                <path class="gp-base" d="M505.765,151.733c-16.255-10.392-4.528-16.329-21.353-29.193c-16.824-12.864-85.104-34.639-96.983-24.743 s-25.233,11.873-25.233,11.873h-72.112h-0.122h-72.118c0,0-13.36-1.977-25.233-11.873c-11.873-9.896-80.16,11.873-96.983,24.743 c-16.824,12.864-5.098,18.801-21.353,29.193C58.02,162.125,15.467,305.619,15.467,305.619s-55.417,159.824,43.544,179.12 c0,0,24.248-15.336,45.025-40.079c20.784-24.743,61.353-59.872,83.128-60.368c21.298-0.483,99.389-0.019,102.792,0l0,0 c0,0,0.024,0,0.061,0c0.043,0,0.062,0,0.062,0l0,0c3.403-0.019,81.494-0.483,102.792,0c21.769,0.496,62.345,35.625,83.128,60.368 s45.024,40.079,45.024,40.079c98.961-19.296,43.544-179.12,43.544-179.12S522.02,162.125,505.765,151.733z"/>
+                
+                <!-- shoulder buttons -->
+                <rect id="svg-lb" class="gp-part" x="118" y="74" rx="12" ry="12" width="92" height="22"></rect>
+                <rect id="svg-rb" class="gp-part" x="370" y="74" rx="12" ry="12" width="92" height="22"></rect>
+
+                <!-- triggers -->
+                <g>
+                  <rect x="118" y="32" width="68" height="30" rx="10" fill="rgba(255,255,255,.25)" stroke="#111827" stroke-width="2"></rect>
+                  <rect id="svg-lt-fill" class="triggerFill" x="121" y="62" width="62" height="0" rx="8"></rect>
+                  <text class="gp-text" x="152" y="51" text-anchor="middle">LT</text>
+                </g>
+
+                <g>
+                  <rect x="394" y="32" width="68" height="30" rx="10" fill="rgba(255,255,255,.25)" stroke="#111827" stroke-width="2"></rect>
+                  <rect id="svg-rt-fill" class="triggerFill" x="397" y="62" width="62" height="0" rx="8"></rect>
+                  <text class="gp-text" x="428" y="51" text-anchor="middle">RT</text>
+                </g>
+
+
+                <!-- centre buttons -->
+                <rect id="svg-back" class="gp-part" x="246" y="140" width="30" height="18" rx="7"></rect>
+                <rect id="svg-start" class="gp-part" x="350" y="140" width="30" height="18" rx="7"></rect>
+                <rect id="svg-start" class="gp-part" x="300" y="155" width="15" height="5" rx="7"></rect>
+                <rect id="svg-start" class="gp-part" x="303" y="220" width="15" height="5" rx="7"></rect>
+                <rect id="svg-start" class="gp-part" x="295" y="350" width="30" height="18" rx="7"></rect>
+                <!-- <circle id="svg-center" class="gp-part" cx="290" cy="220" r="18"></circle> -->
+                <text class="gp-text" x="261" y="152" text-anchor="middle">⟵</text>
+                <text class="gp-text" x="367" y="152" text-anchor="middle">⟶</text>
+                <!-- <text class="gp-text" x="290" y="225" text-anchor="middle">◎</text> -->
+
+                <g id="svg-center-group">
+                <!-- outer button -->
+                <circle id="svg-center" class="gp-part" cx="310" cy="188" r="18"></circle>
+
+                <!-- xbox logo -->
+                <g transform="translate(295,173) scale(0.9)">
+                  <path
+                    d="M16 5.425c-1.888-1.125-4.106-1.922-6.473-2.249l-0.092-0.010c-0.070-0.005-0.152-0.008-0.234-0.008-0.613 0-1.188 0.16-1.687 0.441l0.017-0.009c2.357-1.634 5.277-2.61 8.426-2.61 0.008 0 0.016 0 0.024 0h0.019c0.005 0 0.011 0 0.018 0 3.157 0 6.086 0.976 8.501 2.642l-0.050-0.033c-0.478-0.272-1.051-0.433-1.662-0.433-0.085 0-0.169 0.003-0.252 0.009l0.011-0.001c-2.459 0.336-4.677 1.13-6.648 2.297l0.082-0.045zM5.554 5.268c-0.041 0.014-0.077 0.032-0.11 0.054l0.002-0.001c-2.758 2.723-4.466 6.504-4.466 10.684 0 3.584 1.256 6.875 3.353 9.457l-0.022-0.028c-1.754-3.261 4.48-12.455 7.61-16.159-3.53-3.521-5.277-4.062-6.015-4.062-0.010-0-0.021-0.001-0.032-0.001-0.115 0-0.225 0.021-0.326 0.060l0.006-0.002zM20.083 9.275c3.129 3.706 9.367 12.908 7.605 16.161 2.075-2.554 3.332-5.845 3.332-9.43 0-4.181-1.709-7.962-4.467-10.684l-0.002-0.002c-0.029-0.021-0.063-0.039-0.1-0.052l-0.003-0.001c-0.1-0.036-0.216-0.056-0.336-0.056-0.005 0-0.011 0-0.016 0h0.001c-0.741-0-2.485 0.543-6.014 4.063zM6.114 27.306c2.627 2.306 6.093 3.714 9.888 3.714s7.261-1.407 9.905-3.728l-0.017 0.015c2.349-2.393-5.402-10.901-9.89-14.29-4.483 3.39-12.24 11.897-9.886 14.29z"
+                    fill="#107C10"
+                  />
+                </g>
+              </g>
+
+
+                <!-- left stick -->
+                <g id="svg-ls-group">
+                  <circle id="svg-ls-ring" class="stickRing" cx="182" cy="190" r="42"></circle>
+                  <circle class="stickDead" cx="182" cy="190" r="12"></circle>
+                  <circle id="svg-ls-dot" class="stickDot" cx="182" cy="190" r="11"></circle>
+                  <circle id="svg-ls-press" class="gp-part" cx="182" cy="190" r="24" opacity=".08"></circle>
+                  <text class="stickLabel" x="182" y="248">LS</text>
+                  <!-- <text class="stickLabel mono" id="svg-ls-text" x="182" y="264">x 0.00 y 0.00</text> -->
+                </g>
+
+                <!-- d-pad -->
+                <path id="svg-dpad" class="gp-part" d="M224.771,293.343v-22.454h-18.115v22.454c0,1.689-1.371,3.061-3.06,3.061h-22.448v18.114h22.448 c1.689,0,3.06,1.371,3.06,3.061v22.454h18.115v-22.454c0-1.689,1.371-3.061,3.06-3.061h22.448v-18.114h-22.448 C226.142,296.403,224.771,295.032,224.771,293.343z"></path>
+
+                <!-- face buttons -->
+                <circle id="svg-y" class="gp-part" cx="450" cy="164" r="17"></circle>
+                <circle id="svg-x" class="gp-part" cx="413" cy="201" r="17"></circle>
+                <circle id="svg-b" class="gp-part" cx="487" cy="201" r="17"></circle>
+                <circle id="svg-a" class="gp-part" cx="450" cy="238" r="17"></circle>
+                <text class="gp-text" x="450" y="168" text-anchor="middle">Y</text>
+                <text class="gp-text" x="413" y="205" text-anchor="middle">X</text>
+                <text class="gp-text" x="487" y="205" text-anchor="middle">B</text>
+                <text class="gp-text" x="450" y="242" text-anchor="middle">A</text>
+
+                <!-- right stick -->
+                <g id="svg-rs-group">
+                  <circle id="svg-rs-ring" class="stickRing" cx="396" cy="295" r="42"></circle>
+                  <circle class="stickDead" cx="396" cy="295" r="12"></circle>
+                  <circle id="svg-rs-dot" class="stickDot" cx="396" cy="295" r="11"></circle>
+                  <circle id="svg-rs-press" class="gp-part" cx="396" cy="295" r="24" opacity=".08"></circle>
+                  <text class="stickLabel" x="396" y="353">RS</text>
+                  <!-- <text class="stickLabel mono" id="svg-rs-text" x="396" y="369">x 0.00 y 0.00</text> -->
+                </g>
+              </svg>
+
+              <!-- vibration panel -->
+              <div class="vibPanel">
+                <div class="vibRow">
+                  <label><input id="infVib" type="checkbox"> Infinite vibration</label>
+                  <button id="testVib" class="btnPrimary" type="button">Test Vibration</button>
+                  <span class="muted small" id="vibStatus" style="font-weight:700">—</span>
+                </div>
+              </div>
+
+              <div class="note">
+                Click once on the page if the browser does not detect the controller.
+              </div>
+            </div>
+          </section>
+
+          <aside class="card">
+            <div class="card-h">
+              <div>
+                <div class="title">Live values</div>
+                <div class="hint">Raw readout </div>
+              </div>
+              <div class="hint" id="hz">—</div>
+            </div>
+
+            <div class="card-b">
+              <div class="bars" id="bars"></div>
+
+              <div style="height:14px"></div>
+
+              <div class="row">
+                <div class="kpi">
+                  <div class="lbl">Buttons pressed</div>
+                  <div class="val mono" id="pressed">—</div>
+                  <div class="muted small" style="margin-top:6px">Index list taken from X-input device</div>
+                </div>
+
+                <div class="kpi">
+                  <div class="lbl">Centre offsets (calibration)</div>
+                  <div class="val mono" id="cal">LS (0,0) RS (0,0)</div>
+                  <div class="muted small" style="margin-top:6px">Used for thumbstick drift compensation.</div>
+                </div>
+              </div>
+
+              <div style="height:14px"></div>
+
+              <div class="kpi">
+                <div class="lbl">Event log</div>
+                <div class="val mono small" id="eventLog">—</div>
+              </div>
+
+              <div style="height:14px"></div>
+
+              <div class="kpi">
+                <div class="lbl">Raw snapshot (selected pad)</div>
+                <div class="val mono small" id="json">—</div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+      const fmt = (x) => (Math.round(x * 100) / 100).toFixed(2);
+      const qs = (id) => document.getElementById(id);
+
+      const welcomeScreen = qs("welcomeScreen");
+      const fullscreenScreen = qs("fullscreenScreen");
+      const appShell = qs("appShell");
+      const exitScreen = qs("exitScreen");
+      const toFullscreenBtn = qs("toFullscreenBtn");
+      const enterFsBtn = qs("enterFsBtn");
+            const startAppBtn = qs("startAppBtn");
+      const controllerStatusFs = qs("controllerStatusFs");
+      const doneBtn = qs("doneBtn");
+      const restartBtn = qs("restartBtn");
+      const closeTabBtn = qs("closeTabBtn");
+
+      const statusEl = qs("status");
+      const metaEl = qs("padMeta");
+      const selEl = qs("padSelect");
+      const calBtn = qs("calBtn");
+      const hzEl = qs("hz");
+      const barsWrap = qs("bars");
+      const pressedEl = qs("pressed");
+      const jsonEl = qs("json");
+      const calEl = qs("cal");
+      const eventLogEl = qs("eventLog");
+
+      const infVibEl = qs("infVib");
+      const testVibEl = qs("testVib");
+      const vibStatusEl = qs("vibStatus");
+
+      const svg = {
+        a: qs("svg-a"),
+        b: qs("svg-b"),
+        x: qs("svg-x"),
+        y: qs("svg-y"),
+        lb: qs("svg-lb"),
+        rb: qs("svg-rb"),
+        back: qs("svg-back"),
+        start: qs("svg-start"),
+        center: qs("svg-center"),
+        dpad: qs("svg-dpad"),
+        ltFill: qs("svg-lt-fill"),
+        rtFill: qs("svg-rt-fill"),
+        lsRing: qs("svg-ls-ring"),
+        rsRing: qs("svg-rs-ring"),
+        lsPress: qs("svg-ls-press"),
+        rsPress: qs("svg-rs-press"),
+        lsDot: qs("svg-ls-dot"),
+        rsDot: qs("svg-rs-dot"),
+        lsText: qs("svg-ls-text"),
+        rsText: qs("svg-rs-text")
+      };
+
+      const STICK_BASE = {
+        ls: { x: 182, y: 190 },
+        rs: { x: 396, y: 295 }
+      };
+
+      const map = {
+        A: 0, B: 1, X: 2, Y: 3,
+        LB: 4, RB: 5,
+        LT: 6, RT: 7,
+        BACK: 8, START: 9,
+        LS: 10, RS: 11,
+        DU: 12, DD: 13, DL: 14, DR: 15,
+        HOME: 16
+      };
+
+      const AX = { LSX: 0, LSY: 1, RSX: 2, RSY: 3 };
+
+      let selectedIndex = 0;
+      let lastFrame = performance.now();
+      let fpsEMA = 0;
+      let started = false;
+      const eventLog = [];
+      let cal = {
+        ls: { x: 0, y: 0 },
+        rs: { x: 0, y: 0 }
+      };
+
+      function addLog(message) {
+        const ts = new Date().toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", second: "2-digit"});
+        eventLog.unshift(`[${ts}] ${message}`);
+        if (eventLog.length > 12) eventLog.length = 12;
+        if (eventLogEl) eventLogEl.textContent = eventLog.join("\n");
+      }
+
+      function updateFullscreenControllerStatus() {
+        const connected = getConnectedPads();
+        if (!controllerStatusFs) return;
+        controllerStatusFs.textContent = connected.length
+          ? `Controller status: Connected (${connected.length})`
+          : "Controller status: Not connected";
+      }
+
+      function showFullscreenStep() {}
+
+      function startVisualiser() {
+        appShell.classList.remove("hidden");
+        addLog("Debug flow: visualiser opened directly");
+        if (!started) {
+          started = true;
+          refreshSelect();
+          requestAnimationFrame(loop);
+        }
+      }
+
+      function endVisualiser() {
+        addLog("Debug flow: I am done clicked");
+      }
+
+      async function requestFullscreen() {}
+
+      function isFullscreenActive() {
+        return true;
+      }
+
+      function updateFullscreenUI() {}
+
+      function ensureBars(axisCount = 4) {
+        barsWrap.innerHTML = "";
+        const count = Math.min(Math.max(axisCount, 4), 8);
+        for (let i = 0; i < count; i++) {
+          const row = document.createElement("div");
+          const line = document.createElement("div");
+          line.className = "barline";
+          line.innerHTML = `<span class="mono">axis[${i}]</span><b class="mono" id="axv-${i}">0.00</b>`;
+          const bar = document.createElement("div");
+          bar.className = "bar";
+          const fill = document.createElement("i");
+          fill.id = `axf-${i}`;
+          bar.appendChild(fill);
+          row.appendChild(line);
+          row.appendChild(bar);
+          barsWrap.appendChild(row);
+        }
+      }
+
+      ensureBars(4);
+
+      function getConnectedPads() {
+        const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+        return Array.from(pads).filter(p => p && p.connected);
+      }
+
+      function getSelectedPad() {
+        const connected = getConnectedPads();
+        return connected[selectedIndex] || connected[0] || null;
+      }
+
+      function refreshSelect() {
+        const connected = getConnectedPads();
+        updateFullscreenControllerStatus();
+        selEl.innerHTML = "";
+
+        connected.forEach((p, idx) => {
+          const opt = document.createElement("option");
+          opt.value = String(idx);
+          const shortId = p.id.length > 42 ? p.id.slice(0, 42) + "…" : p.id;
+          opt.textContent = `P${idx + 1}: ${shortId}`;
+          selEl.appendChild(opt);
+        });
+
+        if (connected.length === 0) {
+          statusEl.textContent = "No controller";
+          metaEl.textContent = "—";
+          selEl.disabled = true;
+          calBtn.disabled = true;
+          testVibEl.disabled = true;
+          vibStatusEl.textContent = "No controller";
+          jsonEl.textContent = "—";
+          pressedEl.textContent = "—";
+          hzEl.textContent = "—";
+          return;
+        }
+
+        selectedIndex = clamp(selectedIndex, 0, connected.length - 1);
+        selEl.value = String(selectedIndex);
+        selEl.disabled = false;
+        calBtn.disabled = false;
+
+        const gp = getSelectedPad();
+        statusEl.textContent = "Connected";
+        metaEl.textContent = gp ? `${gp.id} | mapping: ${gp.mapping || "none"}` : "—";
+
+        updateVibSupport();
+      }
+
+      function setOn(node, on) {
+        if (!node) return;
+        node.classList.toggle("on", !!on);
+      }
+
+      function updateAxisBars(axes) {
+        const count = Math.min(Math.max(axes.length, 4), 8);
+        if (barsWrap.querySelectorAll(".barline").length !== count) ensureBars(count);
+
+        for (let i = 0; i < count; i++) {
+          const v = axes[i] ?? 0;
+          const val = clamp(v, -1, 1);
+          const pct = ((val + 1) / 2) * 100;
+          const vEl = qs(`axv-${i}`);
+          const fEl = qs(`axf-${i}`);
+          if (vEl) vEl.textContent = fmt(val);
+          if (fEl) fEl.style.width = `${pct}%`;
+        }
+      }
+
+      function triggerTo01(btn) {
+        if (btn == null) return 0;
+        if (typeof btn === "number") return clamp(btn, 0, 1);
+        if (typeof btn === "object") {
+          const v = typeof btn.value === "number" ? btn.value : (btn.pressed ? 1 : 0);
+          return clamp(v, 0, 1);
+        }
+        return 0;
+      }
+
+      // function updateTriggerFill(el, value) {
+      //   if (!el) return;
+      //   const hMax = 28;
+      //   const h = clamp(value, 0, 1) * hMax;
+      //   el.setAttribute("y", String(74 - h));
+      //   el.setAttribute("height", String(h));
+      //   el.style.opacity = String(0.18 + value * 0.82);
+      // }
+
+      function updateTriggerFill(el, value) {
+        if (!el) return;
+
+        const fillTop = 32;       // top of trigger outline
+        const fillBottom = 62;    // bottom of trigger outline (32 + 30)
+        const innerPadding = 3;   // keeps fill slightly inside the border
+
+        const usableHeight = (fillBottom - fillTop) - innerPadding * 2;
+        const h = clamp(value, 0, 1) * usableHeight;
+
+        const y = fillBottom - innerPadding - h;
+
+        el.setAttribute("y", String(y));
+        el.setAttribute("height", String(h));
+        el.style.opacity = String(0.18 + value * 0.82);
+      }
+
+      function updateStick(dotEl, textEl, baseCx, baseCy, x, y, calX, calY) {
+        if (!dotEl) return;
+
+        let vx = (x ?? 0) - (calX ?? 0);
+        let vy = (y ?? 0) - (calY ?? 0);
+
+        const deadzone = 0.08;
+        if (Math.abs(vx) < deadzone) vx = 0;
+        if (Math.abs(vy) < deadzone) vy = 0;
+
+        vx = clamp(vx, -1, 1);
+        vy = clamp(vy, -1, 1);
+
+        const travel = 24;
+        const px = baseCx + vx * travel;
+        const py = baseCy + vy * travel;
+
+        dotEl.setAttribute("cx", String(px));
+        dotEl.setAttribute("cy", String(py));
+        dotEl.classList.toggle("active", vx !== 0 || vy !== 0);
+
+        if (textEl) {
+          textEl.textContent = `x ${fmt(vx)} y ${fmt(vy)}`;
+        }
+      }
+
+      async function pulse(ms = 200, strong = 0.8, weak = 0.3) {
+        const gp = getSelectedPad();
+        if (!gp) {
+          vibStatusEl.textContent = "No controller";
+          return;
+        }
+
+        const act = gp.vibrationActuator || null;
+        if (act && typeof act.playEffect === "function") {
+          try {
+            await act.playEffect("dual-rumble", {
+              duration: ms,
+              strongMagnitude: clamp(strong, 0, 1),
+              weakMagnitude: clamp(weak, 0, 1)
+            });
+            vibStatusEl.textContent = `Vibration: OK (${ms}ms)`;
+            return;
+          } catch (e) {
+            vibStatusEl.textContent = "Vibration blocked or failed";
+            return;
+          }
+        }
+
+        const haps = gp.hapticActuators || gp.haptics || null;
+        if (Array.isArray(haps) && haps.length && typeof haps[0].pulse === "function") {
+          try {
+            await haps[0].pulse(clamp(strong, 0, 1), ms);
+            vibStatusEl.textContent = `Haptics: OK (${ms}ms)`;
+            return;
+          } catch (e) {
+            vibStatusEl.textContent = "Haptics blocked or failed";
+            return;
+          }
+        }
+
+        vibStatusEl.textContent = "Vibration not supported";
+      }
+
+      let infTimer = null;
+
+      function stopInfinite() {
+        if (infTimer) {
+          clearInterval(infTimer);
+          infTimer = null;
+        }
+        const gp = getSelectedPad();
+        if (gp && gp.vibrationActuator && typeof gp.vibrationActuator.reset === "function") {
+          try { gp.vibrationActuator.reset(); } catch (e) {}
+        }
+      }
+
+      function startInfinite() {
+        stopInfinite();
+        vibStatusEl.textContent = "Infinite vibration: ON";
+        infTimer = setInterval(() => {
+          pulse(120, 0.7, 0.25);
+        }, 180);
+      }
+
+      function updateVibSupport() {
+        const gp = getSelectedPad();
+        if (!gp) {
+          testVibEl.disabled = true;
+          vibStatusEl.textContent = "No controller";
+          return;
+        }
+
+        const supported = !!(
+          gp.vibrationActuator ||
+          (Array.isArray(gp.hapticActuators) && gp.hapticActuators.length)
+        );
+
+        testVibEl.disabled = !supported;
+        vibStatusEl.textContent = supported ? "Vibration supported" : "Vibration not supported";
+      }
+
+      function loop(now) {
+        const dt = Math.max(1, now - lastFrame);
+        lastFrame = now;
+
+        const fps = 1000 / dt;
+        fpsEMA = fpsEMA ? (fpsEMA * 0.9 + fps * 0.1) : fps;
+        hzEl.textContent = `${Math.round(fpsEMA)} Hz`;
+
+        const gp = getSelectedPad();
+        if (!gp) {
+          requestAnimationFrame(loop);
+          return;
+        }
+
+        metaEl.textContent = `${gp.id} | mapping: ${gp.mapping || "none"}`;
+
+        const axes = gp.axes || [];
+        const b = gp.buttons || [];
+
+        updateAxisBars(axes);
+
+        setOn(svg.a, b[map.A]?.pressed);
+        setOn(svg.b, b[map.B]?.pressed);
+        setOn(svg.x, b[map.X]?.pressed);
+        setOn(svg.y, b[map.Y]?.pressed);
+
+        setOn(svg.lb, b[map.LB]?.pressed);
+        setOn(svg.rb, b[map.RB]?.pressed);
+        setOn(svg.back, b[map.BACK]?.pressed);
+        setOn(svg.start, b[map.START]?.pressed);
+        setOn(svg.center, b[map.HOME]?.pressed);
+        setOn(document.getElementById("svg-center-group"), b[map.HOME]?.pressed); 
+
+        const dpadPressed =
+          b[map.DU]?.pressed ||
+          b[map.DD]?.pressed ||
+          b[map.DL]?.pressed ||
+          b[map.DR]?.pressed;
+        setOn(svg.dpad, dpadPressed);
+
+        setOn(svg.lsPress, b[map.LS]?.pressed);
+        setOn(svg.rsPress, b[map.RS]?.pressed);
+        setOn(svg.lsRing, b[map.LS]?.pressed);
+        setOn(svg.rsRing, b[map.RS]?.pressed);
+
+        const lt = triggerTo01(b[map.LT]);
+        const rt = triggerTo01(b[map.RT]);
+        updateTriggerFill(svg.ltFill, lt);
+        updateTriggerFill(svg.rtFill, rt);
+
+        updateStick(
+          svg.lsDot,
+          svg.lsText,
+          STICK_BASE.ls.x,
+          STICK_BASE.ls.y,
+          axes[AX.LSX] ?? 0,
+          axes[AX.LSY] ?? 0,
+          cal.ls.x,
+          cal.ls.y
+        );
+
+        updateStick(
+          svg.rsDot,
+          svg.rsText,
+          STICK_BASE.rs.x,
+          STICK_BASE.rs.y,
+          axes[AX.RSX] ?? 0,
+          axes[AX.RSY] ?? 0,
+          cal.rs.x,
+          cal.rs.y
+        );
+
+        pressedEl.textContent = b
+          .map((btn, i) => btn?.pressed ? i : null)
+          .filter(v => v !== null)
+          .join(", ") || "—";
+
+        calEl.textContent =
+          `LS (${fmt(cal.ls.x)}, ${fmt(cal.ls.y)})  RS (${fmt(cal.rs.x)}, ${fmt(cal.rs.y)})`;
+
+        jsonEl.textContent = JSON.stringify({
+          id: gp.id,
+          mapping: gp.mapping,
+          axes: Array.from(axes).map(v => Number((v ?? 0).toFixed(4))),
+          buttons: Array.from(b).map(btn => ({
+            pressed: !!btn?.pressed,
+            value: Number((btn?.value ?? 0).toFixed(4))
+          }))
+        }, null, 2);
+
+        requestAnimationFrame(loop);
+      }
+
+
+      // DEBUGGING FLOW LISTENERS
+      if (doneBtn) {
+        doneBtn.addEventListener("click", endVisualiser);
+      }
+
+      selEl.addEventListener("change", () => {
+        selectedIndex = Number(selEl.value || 0);
+        refreshSelect();
+      });
+
+      calBtn.addEventListener("click", () => {
+        const gp = getSelectedPad();
+        if (!gp) return;
+        const axes = gp.axes || [];
+
+        cal.ls.x = axes[AX.LSX] ?? 0;
+        cal.ls.y = axes[AX.LSY] ?? 0;
+        cal.rs.x = axes[AX.RSX] ?? 0;
+        cal.rs.y = axes[AX.RSY] ?? 0;
+
+        calEl.textContent =
+          `LS (${fmt(cal.ls.x)}, ${fmt(cal.ls.y)})  RS (${fmt(cal.rs.x)}, ${fmt(cal.rs.y)})`;
+      });
+
+      testVibEl.addEventListener("click", () => pulse(300, 1.0, 0.4));
+
+      infVibEl.addEventListener("change", () => {
+        if (infVibEl.checked) startInfinite();
+        else {
+          stopInfinite();
+          vibStatusEl.textContent = "Infinite vibration: OFF";
+        }
+      });
+
+      let lastFullscreenState = isFullscreenActive();
+      function handleFullscreenChange() {
+        const current = isFullscreenActive();
+        if (current && !lastFullscreenState) addLog("Fullscreen entered");
+        if (!current && lastFullscreenState) addLog("Fullscreen exited");
+        lastFullscreenState = current;
+        updateFullscreenUI();
+      }
+
+      window.addEventListener("gamepadconnected", (e) => {
+        addLog(`Controller connected: ${e.gamepad?.id || "Unknown device"}`);
+        refreshSelect();
+      });
+      window.addEventListener("gamepaddisconnected", (e) => {
+        addLog(`Controller disconnected: ${e.gamepad?.id || "Unknown device"}`);
+        refreshSelect();
+      });
+      window.addEventListener("pointerdown", () => refreshSelect(), { once: true });
+
+      updateFullscreenControllerStatus();
+      updateFullscreenUI();
+
+      startVisualiser();
+    })();
+  </script>
+</body>
+</html>
